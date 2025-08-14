@@ -1,0 +1,4 @@
+# Format: servicename=APIKEY
+securitytrails=YOUR_SECURITYTRAILS_API_KEY
+shodan=YOUR_SHODAN_API_KEY
+censys=YOUR_CENSYS_API_KEY
