@@ -4,6 +4,7 @@ import json
 import threading
 import subprocess
 import re
+import os
 
 # ---- Load Configurations from Files ----
 def load_api_keys(file_path="apikeys.txt"):
@@ -18,6 +19,14 @@ def load_api_keys(file_path="apikeys.txt"):
     except Exception as e:
         print(f"API key file error: {e}")
     return keys
+
+def get_api_key(service, file_path="apikeys.txt"):
+    """
+    Fetch the API key for a given service from apikeys.txt.
+    Usage: key = get_api_key("securitytrails")
+    """
+    keys = load_api_keys(file_path)
+    return keys.get(service)
 
 def load_ports(file_path="ports.txt"):
     ports = []
@@ -64,7 +73,11 @@ def get_subdomains_crtsh(domain):
         print(f"crt.sh error: {e}")
     return []
 
-def get_subdomains_securitytrails(domain, api_key):
+def get_subdomains_securitytrails(domain, file_path="apikeys.txt"):
+    api_key = get_api_key("securitytrails", file_path)
+    if not api_key:
+        print("SecurityTrails API key not found in apikeys.txt")
+        return []
     url = f"https://api.securitytrails.com/v1/domain/{domain}/subdomains"
     headers = {'APIKEY': api_key}
     try:
@@ -166,15 +179,13 @@ def scan_subdomain(subdomain, ports, wordlist, use_nmap=False):
 
 # ---- Main ----
 def main(domain, apikey_file="apikeys.txt", ports_file="ports.txt", wordlist_file="wordlist.txt", use_nmap=False):
-    api_keys = load_api_keys(apikey_file)
     ports = load_ports(ports_file)
     wordlist = load_wordlist(wordlist_file)
 
     print(f"[*] Enumerating subdomains for {domain}")
     subdomains = set(get_subdomains_crtsh(domain))
     subdomains.update(brute_force_subdomains(domain, wordlist))
-    if "securitytrails" in api_keys:
-        subdomains.update(get_subdomains_securitytrails(domain, api_keys["securitytrails"]))
+    subdomains.update(get_subdomains_securitytrails(domain, apikey_file))
     print(f"[*] Found {len(subdomains)} subdomains")
 
     results = []
